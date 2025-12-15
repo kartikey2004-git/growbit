@@ -1,0 +1,13 @@
+# YAML: Yet Another Markup Language
+# docker compose file for database configuration
+
+name: growbit
+services:
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=kartikey
+      - POSTGRES_PASSWORD=npg_jM5EQXU6iwSz
+      - POSTGRES_DB=growbit
+    ports:
+      - 5432:5432
