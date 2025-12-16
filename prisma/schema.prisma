@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,15 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Test {
-  id   String @id @default(cuid())
-  name String
+// Enums for habit frequency means how often a habit should be completed
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
 }
 
+// User model representing application users which store authentication details and relations to habits , followers , and following 
+
 model User {
-  id            String    @id
-  name          String
-  email         String
+  id       String @id
+  name     String
+  email    String @unique(map: "user_email_key")
+  username String?  
+
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now())
@@ -24,7 +29,13 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  @@unique([email])
+  // Relations
+  habits    Habit[] // A user can have multiple habits
+
+  following Follow[] @relation("following") // Users that this user is following
+
+  followers Follow[] @relation("followers") // Users that are following this user
+
   @@map("user")
 }
 
@@ -74,4 +85,67 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Habit {
+  id        String         @id @default(uuid())
+  name      String
+  frequency HabitFrequency
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  // Relations
+
+  userId String // Foreign key to User which user owns this habit
+
+  user   User   @relation(fields: [userId], references: [id]) // relation to User model
+
+  categoryId String? // Foreign key to Category (optional) which category this habit belongs to
+
+  category   Category? @relation(fields: [categoryId], references: [id]) // relation to Category model
+
+  completions HabitCompletion[] // A habit can have multiple completions habits
+
+  // Prevent duplicate habit names per user
+  @@unique([userId, name])
+}
+
+model HabitCompletion {
+  id          String   @id @default(uuid())
+  completedAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  habitId String // Foreign key to Habit which habit this completion belongs to : means which habit was completed
+
+  habit   Habit  @relation(fields: [habitId], references: [id]) // relation to Habit model
+
+  // Prevent duplicate completions for the same habit at the same time
+  @@unique([habitId, completedAt])
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String
+
+  // Relations to habits : for storing which habits belong to this category
+
+  habits Habit[]
+}
+
+model Follow {
+  followerId  String // followerId is the user who follows used for self-referencing relation means the user who follows another user
+
+  followingId String // followingId is the user who is being followed used for self-referencing relation means the user who is being followed by another user
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Self-referencing relations 
+  follower  User @relation("following", fields: [followerId], references: [id])
+
+  following User @relation("followers", fields: [followingId], references: [id])
+
+  // Composite primary key (no duplicate follows) means a user cannot follow the same user more than once
+  @@id([followerId, followingId])
 }

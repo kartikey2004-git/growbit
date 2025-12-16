@@ -1,11 +1,9 @@
-import { Button } from "@/components/ui/button";
 import React from "react";
 
-const Home = () => {
+const Home = async () => {
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center justify-center">
       <h1>Hello Bois!</h1>
-      <Button>Welcome to app</Button>
     </div>
   );
 };
