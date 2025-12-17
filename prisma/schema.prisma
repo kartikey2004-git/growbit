@@ -112,13 +112,14 @@ model Habit {
 
 model HabitCompletion {
   id          String   @id @default(uuid())
-  completedAt DateTime
+  completedAt DateTime @default(now())
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   habitId String // Foreign key to Habit which habit this completion belongs to : means which habit was completed
 
-  habit   Habit  @relation(fields: [habitId], references: [id]) // relation to Habit model
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade) // relation to Habit model
 
   // Prevent duplicate completions for the same habit at the same time
   @@unique([habitId, completedAt])
