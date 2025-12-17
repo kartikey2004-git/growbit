@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "HabitCompletion" ALTER COLUMN "completedAt" SET DEFAULT CURRENT_TIMESTAMP;

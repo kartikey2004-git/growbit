@@ -36,3 +36,7 @@ export default function RootLayout({
     </html>
   );
 }
+
+// TanStack Query : also used in project for powerful asynchronous state management, server-state utilities and data fetching
+
+
