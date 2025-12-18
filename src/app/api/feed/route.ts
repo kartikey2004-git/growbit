@@ -14,8 +14,8 @@ const LIMIT = 10;
 
 export async function GET(req: Request) {
   try {
-    const user = await requireAuth();
-    const userId = user.session.id;
+    const session = await requireAuth();
+    const userId = session.user.id;
 
     const { searchParams } = new URL(req.url);
     const cursor = getCursor(searchParams);
@@ -47,30 +47,43 @@ export async function GET(req: Request) {
           },
         },
       },
-
       include: {
         habit: {
-          include: {
-            user: true,
+          select: {
+            id: true,
+            name: true,
+            frequency: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                image: true,
+              },
+            },
+            // limit streak calculation window
             completions: {
+              select: { completedAt: true },
               orderBy: { completedAt: "desc" },
+              take: 30,
             },
           },
         },
       },
 
-      orderBy: [{ completedAt: "desc" }, { id: "desc" }],
-
+      orderBy: {
+        completedAt: "desc",
+      },
       take: LIMIT + 1,
       cursor: cursor ? { id: cursor } : undefined,
       skip: cursor ? 1 : 0,
     });
 
-    const items = completions.slice(0, LIMIT);
+    const sliced = completions.slice(0, LIMIT);
 
     // Format the feed data : user info, habit info, completion info
 
-    const feed = items.map((completion) => {
+    const feed = sliced.map((completion) => {
       const habit = completion.habit;
       const completionDates = habit.completions.map((c) => c.completedAt);
 
@@ -100,7 +113,7 @@ export async function GET(req: Request) {
       {
         data: feed,
         nextCursor: getNextCursor({
-          items,
+          items: sliced,
           limit: LIMIT,
           getCursor: (i) => i.id,
         }),

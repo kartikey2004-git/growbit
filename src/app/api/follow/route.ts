@@ -8,8 +8,8 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const session = await requireAuth();
-
     const userId = session.user.id;
+
     const { targetUserId } = await req.json();
 
     if (!targetUserId) {
@@ -28,9 +28,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // ensure target user exists
+
+    const targetUser = await db.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
     // Check if already following the another user
 
-    const existingFollow = await prisma?.follow.findUnique({
+    const existingFollow = await db.follow.findUnique({
       where: {
         followerId_followingId: {
           followerId: userId,
@@ -43,6 +54,7 @@ export async function POST(req: Request) {
 
     if (existingFollow) {
       // Unfollow the user
+
       await db.follow.delete({
         where: {
           followerId_followingId: {
@@ -52,7 +64,7 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ followed: false }, { status: 200 });
+      return NextResponse.json({ data: { followed: false } }, { status: 200 });
     }
 
     // Follow the user
@@ -64,7 +76,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ followed: true }, { status: 201 });
+    return NextResponse.json({ data: { followed: true } }, { status: 201 });
   } catch (error) {
     console.error("Error in follow/unfollow user", error);
     return NextResponse.json(
