@@ -19,20 +19,24 @@ const SignIn = () => {
       </div>
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="grid grid-cols-[minmax(0,640px)_1fr] items-center h-16">
-          <div className="flex items-center gap-3 px-6 lg:pl-24">
-            <div className="w-8 h-8 rounded-full bg-[#17B100] text-white flex items-center justify-center">
+        <div className="flex items-center justify-between h-14 md:h-16 px-4 sm:px-6 lg:px-12">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-[#17B100] text-white flex items-center justify-center shrink-0">
               <Trees size={16} />
             </div>
 
-            <Link href="/" className="text-xl font-semibold">
+            <Link
+              href="/"
+              className="text-lg md:text-xl font-semibold leading-none"
+            >
               Growbit
             </Link>
           </div>
 
-          <div className="flex justify-end items-center gap-3 px-6 lg:pr-12">
+          <div className="flex items-center gap-2 md:gap-3">
             <Button
               variant="outline"
+              className="hidden sm:inline-flex"
               onClick={() =>
                 authClient.signIn.social({
                   provider: "google",
@@ -44,7 +48,7 @@ const SignIn = () => {
             </Button>
 
             <Button
-              className="bg-[#17B100] text-white hover:bg-[#17B100]/80"
+              className="bg-[#17B100] text-white hover:bg-[#17B100]/80 px-3 sm:px-4"
               onClick={() =>
                 authClient.signIn.social({
                   provider: "google",
@@ -52,7 +56,7 @@ const SignIn = () => {
                 })
               }
             >
-              Get Started Free
+              Get Started
             </Button>
           </div>
         </div>
@@ -246,7 +250,6 @@ const SignIn = () => {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 bg-[#17B100]">
-      
         <div
           className="
       px-6 sm:px-10 lg:px-20
@@ -270,7 +273,6 @@ const SignIn = () => {
           </p>
         </div>
 
-        
         <div className="hidden lg:block relative w-full h-105">
           <Image
             src="/banner.png"

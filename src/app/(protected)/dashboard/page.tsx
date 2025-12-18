@@ -19,26 +19,26 @@ export default function Dashboard() {
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="
-          w-full
-          px-4 sm:px-6 lg:px-8
-          py-5
-        "
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        className="w-full px-3 sm:px-6 lg:px-8 py-4"
       >
         <div
           className="
-            rounded-2xl
-            border
             bg-background
-            shadow-sm
+            sm:rounded-2xl
+            sm:border
+            sm:shadow-sm
           "
         >
-          <div className="p-4 sm:p-6 space-y-6">
-            <DashboardHeader onCreate={() => setIsCreateOpen(true)} />
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur sm:static sm:bg-transparent">
+            <div className="px-1 sm:px-6 pt-2 sm:pt-6 pb-3 border-b sm:border-none">
+              <DashboardHeader onCreate={() => setIsCreateOpen(true)} />
+            </div>
+          </div>
 
+          <div className="px-1 sm:px-6 py-3 sm:py-4">
             <HabitList habits={habits} onEdit={setEditingHabit} />
           </div>
         </div>
