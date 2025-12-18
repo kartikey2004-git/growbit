@@ -1,5 +1,3 @@
-// API related to search users
-
 import { getCursor } from "@/lib/api/getCursor";
 import { requireAuth } from "@/lib/auth/requireAuth";
 import db from "@/lib/database";
@@ -11,9 +9,6 @@ const LIMIT = 10;
 export async function GET(req: Request) {
   try {
     const session = await requireAuth();
-
-    // get current user id and get search query params for searching users on basis of it
-
     const userId = session.user.id;
 
     const { searchParams } = new URL(req.url);
@@ -21,10 +16,9 @@ export async function GET(req: Request) {
     const cursor = getCursor(searchParams);
 
     if (!query || query.length < 2) {
-      return NextResponse.json({ users: [] }, { status: 200 });
+      return NextResponse.json({ data: [], nextCursor: null }, { status: 200 });
     }
 
-    // Search users
     const users = await db.user.findMany({
       where: {
         id: { not: userId },
@@ -49,26 +43,21 @@ export async function GET(req: Request) {
         username: true,
         image: true,
       },
-      orderBy: [{ id: "desc" }],
+      orderBy: {
+        createdAt: "desc",
+      },
       take: LIMIT + 1,
       cursor: cursor ? { id: cursor } : undefined,
       skip: cursor ? 1 : 0,
     });
 
-    if (users.length === 0) {
-      return NextResponse.json({ users: [] }, { status: 200 });
-    }
-
-    // Slice for pagination
-    const items = users.slice(0, LIMIT);
-
-    // Find the users who I am already following from the searched users
+    const sliced = users.slice(0, LIMIT);
 
     const follows = await db.follow.findMany({
       where: {
         followerId: userId,
         followingId: {
-          in: items.map((user) => user.id),
+          in: sliced.map((u) => u.id),
         },
       },
       select: {
@@ -76,22 +65,16 @@ export async function GET(req: Request) {
       },
     });
 
-    // Create a set of followed user IDs for quick lookup
-
     const followedSet = new Set(follows.map((f) => f.followingId));
-
-    // Attach isFollowing flag
-
-    const result = items.map((user) => ({
-      ...user,
-      isFollowing: followedSet.has(user.id),
-    }));
 
     return NextResponse.json(
       {
-        users: result,
+        data: sliced.map((u) => ({
+          ...u,
+          isFollowing: followedSet.has(u.id),
+        })),
         nextCursor: getNextCursor({
-          items,
+          items: sliced,
           limit: LIMIT,
           getCursor: (u) => u.id,
         }),

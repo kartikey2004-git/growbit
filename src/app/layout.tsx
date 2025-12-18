@@ -5,6 +5,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 //@ts-ignore
 import "./globals.css";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +33,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <SidebarProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </SidebarProvider>
       </body>
     </html>
   );
 }
 
 // TanStack Query : also used in project for powerful asynchronous state management, server-state utilities and data fetching
-
-

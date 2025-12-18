@@ -1,5 +1,3 @@
-// API to fetch a list of following users
-
 import { getCursor } from "@/lib/api/getCursor";
 import { requireAuth } from "@/lib/auth/requireAuth";
 import db from "@/lib/database";
@@ -11,17 +9,17 @@ const LIMIT = 10;
 export async function GET(req: Request) {
   try {
     const session = await requireAuth();
+    const userId = session.user.id;
+
     const { searchParams } = new URL(req.url);
     const cursor = getCursor(searchParams);
 
-    // GET all the users I follow
-
-    const follows = await db.follow.findMany({
+    const followers = await db.follow.findMany({
       where: {
-        followerId: session.user.id,
+        followingId: userId,
       },
       select: {
-        following: {
+        follower: {
           select: {
             id: true,
             name: true,
@@ -30,43 +28,59 @@ export async function GET(req: Request) {
           },
         },
       },
-
       orderBy: {
-        following: {
-          id: "desc",
-        },
+        followerId: "desc",
       },
-
       take: LIMIT + 1,
       cursor: cursor
         ? {
             followerId_followingId: {
-              followerId: session.user.id,
-              followingId: cursor,
+              followerId: cursor,
+              followingId: userId,
             },
           }
         : undefined,
       skip: cursor ? 1 : 0,
     });
 
-    const items = follows.slice(0, LIMIT).map((f) => f.following);
+    const sliced = followers.slice(0, LIMIT);
+    const users = sliced.map((f) => f.follower);
+
+    // Follow-back status
+    const followBack = await db.follow.findMany({
+      where: {
+        followerId: userId,
+        followingId: {
+          in: users.map((u) => u.id),
+        },
+      },
+      select: {
+        followingId: true,
+      },
+    });
+
+    const followingSet = new Set(followBack.map((f) => f.followingId));
 
     return NextResponse.json(
       {
-        data: items.map((u) => ({
+        data: users.map((u) => ({
           ...u,
-          isFollowing: true, // I already follow them
+          isFollowing: followingSet.has(u.id),
         })),
         nextCursor: getNextCursor({
-          items,
+          items: sliced,
           limit: LIMIT,
-          getCursor: (u) => u.id,
+          getCursor: (f) => f.follower.id,
         }),
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in getting following users", error);
+    if ((error as Error).message === "UNAUTHORIZED") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    console.error("Error fetching followers:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }

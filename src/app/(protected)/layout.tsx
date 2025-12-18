@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import UserButton from "@/modules/authentication/components/user-button";
 import { currentUser } from "@/modules/authentication/actions";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSideBar } from "./app-sidebar";
+import MobileNavOverlay from "@/components/navigation/MobileNavOverLay";
 import { StickyBanner } from "@/components/ui/sticky-banner";
 
 export default async function ProtectedLayout({
@@ -22,7 +22,7 @@ export default async function ProtectedLayout({
 
   return (
     <SidebarProvider>
-      <AppSideBar />
+      <AppSideBar user={user} />
 
       <main className="mr-2 w-full">
         <div className="border-sidebar-border bg-sidebar mt-2 flex items-center gap-2 rounded-sm border p-2 px-4 shadow">
@@ -35,7 +35,7 @@ export default async function ProtectedLayout({
             </p>
           </StickyBanner>
 
-          <div className="ml-auto">{user && <UserButton user={user} />}</div>
+          <MobileNavOverlay user={ user } />
         </div>
 
         <div className="border-sidebar-border bg-sidebar mt-2 h-[calc(100vh-6.2rem)] overflow-y-auto rounded-sm border p-4 shadow">

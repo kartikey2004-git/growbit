@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { auth } from "../auth";
-import { NextResponse } from "next/server";
 
 // Auth check : user is authorised or not
 
@@ -10,7 +9,7 @@ export async function requireAuth() {
   });
 
   if (!session?.user?.id) {
-    throw NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    throw new Error("Unauthorized");
   }
 
   return session;

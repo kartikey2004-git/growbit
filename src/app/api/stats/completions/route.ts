@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from "next/server";
 import { subDays, format, startOfDay } from "date-fns";
 import db from "@/lib/database";
@@ -12,14 +14,14 @@ export async function GET(req: Request) {
 
     const range = searchParams.get("range") ?? "30d";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!ALLOWED_RANGES.includes(range as any)) {
       return NextResponse.json({ message: "Invalid range" }, { status: 400 });
     }
 
     const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
 
-    const fromDate = startOfDay(subDays(new Date(), days - 1));
+    const today = startOfDay(new Date());
+    const fromDate = subDays(today, days - 1);
 
     // Fetch completions
 
@@ -37,7 +39,7 @@ export async function GET(req: Request) {
       },
     });
 
-    // Group by day
+    // group by yyyy-MM-dd
     const map = new Map<string, number>();
 
     for (const c of completions) {
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
     // Fill missing days
 
     const data = Array.from({ length: days }).map((_, i) => {
-      const date = format(subDays(new Date(), days - 1 - i), "yyyy-MM-dd");
+      const date = format(subDays(fromDate, -i), "yyyy-MM-dd");
 
       return {
         date,
@@ -56,7 +58,16 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ range, data }, { status: 200 });
+    return NextResponse.json(
+      {
+        data: {
+          range,
+          days,
+          series: data,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     return error instanceof Response
       ? error

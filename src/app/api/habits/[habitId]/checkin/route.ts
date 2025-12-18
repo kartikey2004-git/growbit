@@ -1,70 +1,27 @@
-// POST check-in daily/weekly habits
-
-/*
-
-  - If check-in logic is wrong, streaks, leaderboard, reminders — everything breaks.
-
-1. Check-in Rules (Lock These Mentally)
-     
-  - Daily habit
-       
-    - User can check in once per calendar day
-    - Day = local day (not 24 hours rolling window)
-
-  - Weekly habit
-      
-    - User can check in once per calendar week
-    - Week starts on Monday (important for consistency)
-
-    
-  Rules : 
-      
-    - Cannot check in for someone else’s habit
-    - Cannot check in twice in same day/week
-    - Check-in is append-only (never update old ones)
-
------------------------------------------------
-
-2. API EndPoint
-POST /api/habits/:habitId/checkin
-
-Sucess message: 
-{
-  message: "Check-in successful"
-}
-
-Errors
-
-401	Not authenticated
-403	Habit doesn’t belong to user
-409	Already checked in
-404	Habit not found
-
------------------------------------------------
-
-
-*/
-
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth/requireAuth";
 import { getCheckinRange } from "@/lib/utils/checkin";
 import db from "@/lib/database";
-import { requireAuth } from "@/lib/auth/requireAuth";
 
 type Params = {
-  params: {
+  params: Promise<{
     habitId: string;
-  };
+  }>;
 };
 
 export async function POST(req: Request, { params }: Params) {
   try {
     const session = await requireAuth();
+    const { habitId } = await params;
 
-    const userId = session.user.id;
-    const habitId = params.habitId;
+    if (!habitId) {
+      return NextResponse.json(
+        { message: "Habit ID is required" },
+        { status: 400 }
+      );
+    }
 
-    // Fetch the habit to ensure it exists and belongs to the user
-
+    // Fetch habit + ownership + frequency
     const habit = await db.habit.findUnique({
       where: { id: habitId },
       select: {
@@ -78,19 +35,16 @@ export async function POST(req: Request, { params }: Params) {
       return NextResponse.json({ message: "Habit not found" }, { status: 404 });
     }
 
-    // Ownership check
-
-    if (habit.userId !== userId) {
+    if (habit.userId !== session.user.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Check existing check-ins in the current period of the habit's frequency
-
+    // Determine valid check-in window (day / week)
     const { from, to } = getCheckinRange(habit.frequency);
 
     const alreadyCheckedIn = await db.habitCompletion.findFirst({
       where: {
-        habitId,
+        habitId: habit.id,
         completedAt: {
           gte: from,
           lte: to,
@@ -105,11 +59,10 @@ export async function POST(req: Request, { params }: Params) {
       );
     }
 
-    // Create the check-in for the habit
-
+    // Append-only check-in
     await db.habitCompletion.create({
       data: {
-        habitId,
+        habitId: habit.id,
       },
     });
 

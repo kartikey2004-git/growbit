@@ -5,82 +5,9 @@ import {
   calculateWeeklyStreak,
 } from "@/lib/utils/streak";
 import { HabitSchema } from "@/lib/validators/habit";
-import { isSameDay, isSameWeek } from "date-fns";
+import { differenceInDays, isSameDay, isSameWeek } from "date-fns";
 import { NextResponse } from "next/server";
 import z from "zod";
-
-// POST (create a habit )
-
-/*
-
-Create Habit API : Order of creating a habit
-
-   1. Define contract (what the API expects & returns)
-
-   2. Zod validation
-   3. API route (Next.js App Router)
-   4. Edge cases (duplicate habit, auth, validation)
-   
-   5. How TanStack Query will consume this
-
-
------------------------------------------------
-
-1️. API Contract (Lock This First)
-Endpoint : POST /api/habits
-
-Request body :
-{
-  name: string;
-  frequency: "DAILY" | "WEEKLY";
-  categoryId?: string;
-}
-
-Success response
-{
-  habit: Habit
-}
-
-Error cases
-
-   - 401 → not authenticated
-   - 400 → validation error
-   - 409 → duplicate habit name (per user)
-
-Locking this early avoids frontend-backend mismatch later.
-
-
-2. Zod Schema (Single Source of Truth)
-
-Why this matters
-
-   - Same schema → API + frontend form
-   - No silent bugs from mismatched validation
-
------------------------------------------------
-
-Implementation:
-   
-    - Duplicate habit protection
-      - Case-insensitive
-      - Scoped per user
-      - Prevents UX confusion later
-    
-    - Auth handled server-side
-      - No trust on frontend
-      - Secure by default
-    
-    - Validation before DB hit
-      - Avoids unnecessary queries
-      - Clean error responses
-
-  
-      Bugs Faced earlier : 
-
-        - Calculating frequency logic during creation
-        - Using new Date() blindly (timezone bugs later)
-
-*/
 
 export async function POST(req: Request) {
   try {
@@ -142,97 +69,22 @@ export async function POST(req: Request) {
   }
 }
 
-// GET (list of habits )
-
-/*
-
-  We need to focus on somethings:
-     
-     - What GET /api/habits should return
-     - How streak + completion is calculated (DAILY & WEEKLY)
-
-     - The actual API route code
-     - Why this approach scales
-     - How TanStack Query consumes it
-
----------------------------------------------
-
-1. What the Dashboard Actually Needs (API Contract)
-
-Endpoint
-GET /api/habits
-
-Response shape (what frontend really needs)
-{
-habits: Array<{
-    id: string;
-    name: string;
-    frequency: "DAILY" | "WEEKLY";
-    categoryId?: string;
-    createdAt: Date;
-
-    completedToday: boolean;
-    currentStreak: number;
-    completionRate: number; // %
-  }>;
-}
-
-- Important : backend responsibilities.
-   
-   - Frontend should NOT calculate streaks.
-   - Frontend should NOT figure out “completed today”.
-
-  
-2. How Streak Logic Works
-   
-  - DAILY habit
-
-      1. Look at completion dates for today and previous days
-
-      2. start from today, count backwards until a miss
-      
-      3. count how many consecutive days backwards have completions of habits
-
-  - Weekly habit
-    
-    - Group completions by week (Mon-Sun) : group completion means if a habit is completed at least once in that week
-
-    - Count how many consecutive weeks have ≥1 habit completion, starting from current week backwards until a miss
-
-  If a day/week is missed → streak breaks.
-
------------------------------------------------
-
-   - Production-Grade API's
-
-     - One DB query
-     - No frontend calculations
-     - Handles DAILY & WEEKLY correctly
-     - Safe for future analytics
-     - Easy to cache with TanStack Query
-    
-   - This endpoint alone powers:
-     
-     - Dashboard
-     - Charts
-     - Streak UI
-     - Completion indicators
-
-*/
-
 export async function GET() {
   try {
     const session = await requireAuth();
+    const userId = session.user.id;
 
     // Fetch habits with completions from the database in reverse chronological order
 
-    const habits = await prisma?.habit.findMany({
+    const habits = await db.habit.findMany({
       where: {
-        userId: session.user.id,
+        userId: userId,
       },
       include: {
         completions: {
+          select: { completedAt: true },
           orderBy: { completedAt: "desc" },
+          take: 60,
         },
       },
       orderBy: {
@@ -264,15 +116,15 @@ export async function GET() {
           ? calculateDailyStreak(completionDates)
           : calculateWeeklyStreak(completionDates);
 
+      const daysSinceCreation = Math.max(
+        1,
+        differenceInDays(today, habit.createdAt) + 1
+      );
+
       // Calculate completion rate
-      const completionRate =
-        habit.completions.length === 0
-          ? 0
-          : Math.round(
-              (habit.completions.length /
-                Math.max(1, habit.completions.length + 5)) *
-                100
-            );
+      const completionRate = Math.round(
+        (habit.completions.length / daysSinceCreation) * 100
+      );
 
       return {
         id: habit.id,
@@ -280,14 +132,13 @@ export async function GET() {
         frequency: habit.frequency,
         categoryId: habit.categoryId,
         createdAt: habit.createdAt,
-
         completedToday,
         currentStreak,
         completionRate,
       };
     });
 
-    return NextResponse.json({ habits: formattedHabits }, { status: 200 });
+    return NextResponse.json({ formattedHabits }, { status: 200 });
   } catch (error) {
     console.error("GET_HABITS_ERROR", error);
     return NextResponse.json(

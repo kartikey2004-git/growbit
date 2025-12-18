@@ -8,6 +8,8 @@ import {
 } from "@/lib/utils/streak";
 import { NextResponse } from "next/server";
 
+const STREAK_WINDOW = 60;
+
 export async function GET() {
   try {
     const session = await requireAuth();
@@ -18,10 +20,22 @@ export async function GET() {
       where: {
         userId: session.user.id,
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        frequency: true,
         completions: {
+          select: {
+            completedAt: true,
+          },
           orderBy: {
             completedAt: "desc",
+          },
+          take: STREAK_WINDOW,
+        },
+        _count: {
+          select: {
+            completions: true,
           },
         },
       },
@@ -40,7 +54,7 @@ export async function GET() {
         name: habit.name,
         frequency: habit.frequency,
         currentStreak,
-        totalCompletions: dates.length,
+        totalCompletions: habit._count.completions,
       };
     });
 

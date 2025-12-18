@@ -1,11 +1,7 @@
-import React from "react";
+import { redirect } from "next/navigation";
 
-const Home = async () => {
-  return (
-    <div className="flex flex-col items-center justify-center">
-      <h1>Hello Bois!</h1>
-    </div>
-  );
+const page = () => {
+  return redirect("/dashboard");
 };
 
-export default Home;
+export default page;

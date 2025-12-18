@@ -47,5 +47,3 @@ export const calculateWeeklyStreak = (dates: Date[]) => {
   return streak;
 };
 
-// This logic is: timezone-safe , predictable and testable
-

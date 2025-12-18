@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -14,36 +16,33 @@ import {
 } from "@/components/ui/sidebar";
 
 import { cn } from "@/lib/utils";
+import UserButton from "@/modules/authentication/components/user-button";
 import {
   LayoutDashboard,
-  ListChecks,
-  Users,
-  Plus,
   BarChart3,
   Trophy,
+  Search,
+  Users,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "My Habits", url: "/habits", icon: ListChecks },
-  { title: "Friends", url: "/friends", icon: Users },
+  { title: "Search", url: "/social/search", icon: Search },
+  { title: "Social", url: "/social", icon: Users },
 ];
-
-const actionNav = [{ title: "Create Habit", url: "/habits/new", icon: Plus }];
 
 const insightsNav = [
-  { title: "Progress", url: "/progress", icon: BarChart3 },
+  { title: "Stats", url: "/stats", icon: BarChart3 },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
+  { title: "Feed", url: "/feed", icon: Activity },
 ];
 
-export function AppSideBar() {
+export function AppSideBar({ user }: { user: any }) {
   const pathname = usePathname();
   const { open } = useSidebar();
-
-  const isActive = (url: string) =>
-    pathname === url || pathname.startsWith(url + "/");
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -65,31 +64,9 @@ export function AppSideBar() {
                   <SidebarMenuButton asChild>
                     <Link
                       href={item.url}
-                      className={cn(
-                        isActive(item.url) &&
-                          "bg-primary text-white hover:bg-primary"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {actionNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      href={item.url}
-                      className="flex items-center gap-2  shadow-md border border-white/30 bg-white px-3 py-2 text-black transition hover:bg-gray-100"
+                      className={cn({
+                        "bg-[#17B100]! text-white!": pathname === item.url,
+                      })}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -110,10 +87,9 @@ export function AppSideBar() {
                   <SidebarMenuButton asChild>
                     <Link
                       href={item.url}
-                      className={cn(
-                        isActive(item.url) &&
-                          "bg-primary text-white hover:bg-primary"
-                      )}
+                      className={cn({
+                        "bg-[#17B100]! text-white!": pathname === item.url,
+                      })}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -125,6 +101,16 @@ export function AppSideBar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="border-t px-3 py-2">
+        <div className="flex items-center gap-3">
+          {open && (
+            <span className="text-sm font-medium text-foreground">Profile</span>
+          )}
+
+          <div className="ml-auto">{user && <UserButton user={user} />}</div>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
