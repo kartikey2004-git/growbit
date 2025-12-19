@@ -16,45 +16,51 @@ export function HabitCard({ habit, onEdit }: Props) {
 
   return (
     <>
-      <div
-        className="
-          group relative
-          rounded-xl border bg-card
-          transition-all duration-200
-          hover:border-border/60 hover:shadow-sm
-        "
-      >
-        <div className="flex items-start justify-between gap-3 p-4">
-          <div className="min-w-0 space-y-1">
-            <h3 className="font-medium leading-tight tracking-tight truncate">
-              {habit.name}
-            </h3>
+      <div className="group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-all hover:border-border/60 hover:shadow-sm">
+        <div className="min-w-0 space-y-1">
+          <h3 className="font-medium leading-tight truncate">{habit.name}</h3>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="uppercase tracking-wide">{habit.frequency}</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="uppercase tracking-wide">{habit.frequency}</span>
 
-              <span className="flex items-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
-                {habit.currentStreak}
-              </span>
-            </div>
+            <span className="flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              {habit.currentStreak}
+            </span>
           </div>
-
-          <CheckinButton habit={habit} />
         </div>
 
-        <div
-          className="
-            flex items-center justify-end gap-1
-            px-4 pb-3
-            sm:absolute sm:top-3 sm:right-3 sm:p-0
-          "
-        >
+        <div className="flex items-center gap-2">
+          <CheckinButton habit={habit} />
+
+          <div className="hidden sm:flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onEdit(habit)}
+              className="h-8 w-8"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setShowDelete(true)}
+              className="h-8 w-8 text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+
+        <div className="flex sm:hidden justify-end gap-1 pt-1">
           <Button
             size="icon"
             variant="ghost"
             onClick={() => onEdit(habit)}
-            className="h-8 w-8 hover:bg-gray-300/40 hover:text-black"
+            className="h-8 w-8"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -63,7 +69,7 @@ export function HabitCard({ habit, onEdit }: Props) {
             size="icon"
             variant="ghost"
             onClick={() => setShowDelete(true)}
-            className="h-8 w-8 text-destructive hover:bg-red-600 hover:text-white"
+            className="h-8 w-8 text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
